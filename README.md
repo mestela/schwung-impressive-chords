@@ -7,7 +7,7 @@ This is a MIDI FX module for Schwung that generates ~~ex~~impressive chords with
 You can install this module directly from this repository on your Move device:
 
 ```bash
-./scripts/install.sh install-module-github mestela/schwung-expressive-chords
+./scripts/install.sh install-module-github mestela/schwung-impressive-chords
 ```
 
 ## Parameters
