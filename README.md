@@ -1,6 +1,6 @@
-# Expressive Chords for Schwung
+# Impressive Chords for Schwung
 
-This is a MIDI FX module for Schwung that generates expressive chords with strumming, tilt, and articulation controls.
+This is a MIDI FX module for Schwung that generates ~~ex~~impressive chords with strumming, tilt, and articulation controls. It's a port of Expressive Chords, a M4L device for Ableton Live.
 
 ## Installation
 
