@@ -30,6 +30,7 @@ You can install this module directly from this repository on your Move device:
 - **Choke**: Cut previous notes on retrigger or new note (0 or 1).
 - **Notes Limit**: Force only this number of notes to play (0-12, 0 = no limit).
 - **Fit Strum**: Fit the strum into the retrig length (0 or 1).
+- **Gate**: Kill notes on pad release (0 or 1).
 
 ## Source Code
 
