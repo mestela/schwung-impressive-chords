@@ -1,0 +1,47 @@
+{
+  "title": "Impressive Chords",
+  "children": [
+    {
+      "title": "Overview",
+      "lines": [
+        "Trigger chords from",
+        "pads. Inspired by",
+        "Expressive Chords.",
+        "Offers strum, tilt",
+        "and articulation."
+      ]
+    },
+    {
+      "title": "Parameters",
+      "lines": [
+        "Preset: Select chord",
+        " mapping.",
+        "Base Note: Root pad",
+        " note.",
+        "Transpose: Shift",
+        " pitch in semitones",
+        "Invert: Chord",
+        " inversion.",
+        "Strum: Delay",
+        " between notes.",
+        "Tilt: Velocity",
+        " ramp.",
+        "Articulate: Playing",
+        " order.",
+        "Length: Note",
+        " duration in ms."
+      ]
+    },
+    {
+      "title": "Articulations",
+      "lines": [
+        "1: Low to High",
+        "2: Outside-In",
+        "3: High to Low",
+        "4: Even/Odd",
+        "5: Inside-Out",
+        "6: Odd/Even"
+      ]
+    }
+  ]
+}
