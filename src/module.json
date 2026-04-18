@@ -4,7 +4,6 @@
   "abbrev": "IC",
   "version": "0.1.0",
   "author": "mestela",
-  "builtin": true,
   "capabilities": {
     "chainable": true,
     "component_type": "midi_fx",
