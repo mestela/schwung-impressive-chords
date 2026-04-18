@@ -1,10 +1,9 @@
 {
   "id": "impressive-chords",
   "name": "Impressive Chords",
-  "abbrev": "IC",
-  "version": "0.1.0",
+  "description": "Advanced chord generator with strumming and clock-synced retriggering",
+  "version": "0.1.17",
   "author": "mestela",
-  "builtin": true,
   "capabilities": {
     "chainable": true,
     "component_type": "midi_fx",
@@ -135,6 +134,66 @@
               "max": 2000,
               "default": 200,
               "step": 10
+            },
+            {
+              "key": "retrig",
+              "name": "Retrigger",
+              "type": "enum",
+              "options": [
+                "0 Off",
+                "1 1B",
+                "2 1/2B",
+                "3 1b",
+                "4 1/2b",
+                "5 1/4b",
+                "6 1/8b",
+                "7 1/16b",
+                "8 1/32b"
+              ],
+              "default": 0
+            },
+            {
+              "key": "timing",
+              "name": "Timing",
+              "type": "enum",
+              "options": [
+                "Straight",
+                "Dotted",
+                "Triplet"
+              ],
+              "default": 0
+            },
+            {
+              "key": "choke",
+              "name": "Choke",
+              "type": "int",
+              "min": 0,
+              "max": 1,
+              "default": 0
+            },
+            {
+              "key": "notes",
+              "name": "Notes Limit",
+              "type": "int",
+              "min": 0,
+              "max": 12,
+              "default": 0
+            },
+            {
+              "key": "fit",
+              "name": "Fit Strum",
+              "type": "int",
+              "min": 0,
+              "max": 1,
+              "default": 0
+            },
+            {
+              "key": "gate",
+              "name": "Gate",
+              "type": "int",
+              "min": 0,
+              "max": 1,
+              "default": 0
             }
           ],
           "knobs": [
@@ -145,7 +204,13 @@
             "strum",
             "tilt",
             "articulate",
-            "length"
+            "length",
+            "retrig",
+            "timing",
+            "choke",
+            "notes",
+            "fit",
+            "gate"
           ]
         }
       }
