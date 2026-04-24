@@ -7,7 +7,9 @@
 #include "impressive_chords_data.h"
 #include "impressive_chords_params.h"
 
-#define MAX_PENDING 64
+#define MAX_PENDING 256
+#define MAX_ACTIVE_PER_NOTE 32
+#define RELEASE_STAGGER_SAMPLES 64   /* ~1.5ms @44.1kHz per voice */
 
 static const host_api_v1_t *g_host = NULL;
 
@@ -15,6 +17,7 @@ typedef struct {
     uint8_t status;
     uint8_t note;
     uint8_t velocity;
+    uint8_t input_note;    // Pad note that queued this event (for release cancel)
     int delay_samples;
 } pending_note_t;
 
@@ -26,13 +29,16 @@ typedef struct {
     int strum;
     int tilt;
     int articulate;
-    int length; // New parameter
-    
-    // Active notes tracking (note number -> chord index triggered it)
-    // For each input note, we store up to 12 triggered notes.
-    int active_notes[128][12];
+    int length;
+
+    // Currently-audible voices per input note (populated when note-on actually fires)
+    uint8_t active_notes[128][MAX_ACTIVE_PER_NOTE];
     int active_counts[128];
-    
+
+    // Pad currently held per input note — while held, length-timer note-offs
+    // are suppressed so the chord sustains for the full hold duration.
+    uint8_t pad_held[128];
+
     pending_note_t pending[MAX_PENDING];
     int pending_count;
 } ic_instance_t;
@@ -40,7 +46,7 @@ typedef struct {
 static void* ic_create_instance(const char *module_dir, const char *config_json) {
     ic_instance_t *inst = calloc(1, sizeof(ic_instance_t));
     if (!inst) return NULL;
-    
+
     inst->preset_idx = 0;
     inst->base_note = 48; // Default to C2
     inst->transpose = 0;
@@ -50,7 +56,7 @@ static void* ic_create_instance(const char *module_dir, const char *config_json)
     inst->articulate = 1;
     inst->length = 200; // Default 200ms
     inst->pending_count = 0;
-    
+
     return inst;
 }
 
@@ -58,13 +64,41 @@ static void ic_destroy_instance(void *instance) {
     free(instance);
 }
 
-static void queue_note(ic_instance_t *inst, uint8_t status, uint8_t note, uint8_t velocity, int delay_samples) {
-    if (inst->pending_count >= MAX_PENDING) return;
+static int queue_note(ic_instance_t *inst, uint8_t status, uint8_t note,
+                      uint8_t velocity, uint8_t input_note, int delay_samples) {
+    if (inst->pending_count >= MAX_PENDING) return 0;
     pending_note_t *p = &inst->pending[inst->pending_count++];
     p->status = status;
     p->note = note;
     p->velocity = velocity;
+    p->input_note = input_note;
     p->delay_samples = delay_samples;
+    return 1;
+}
+
+static inline void active_append(ic_instance_t *inst, uint8_t input_note, uint8_t voice_note) {
+    if (input_note >= 128) return;
+    int n = inst->active_counts[input_note];
+    if (n < MAX_ACTIVE_PER_NOTE) {
+        inst->active_notes[input_note][n] = voice_note;
+        inst->active_counts[input_note] = n + 1;
+    }
+}
+
+// Remove first matching voice from active_notes[input_note]; return 1 if found.
+static inline int active_remove_one(ic_instance_t *inst, uint8_t input_note, uint8_t voice_note) {
+    if (input_note >= 128) return 0;
+    int n = inst->active_counts[input_note];
+    for (int i = 0; i < n; i++) {
+        if (inst->active_notes[input_note][i] == voice_note) {
+            for (int j = i; j < n - 1; j++) {
+                inst->active_notes[input_note][j] = inst->active_notes[input_note][j + 1];
+            }
+            inst->active_counts[input_note] = n - 1;
+            return 1;
+        }
+    }
+    return 0;
 }
 
 static int ic_process_midi(void *instance,
@@ -77,19 +111,21 @@ static int ic_process_midi(void *instance,
     uint8_t status = in_msg[0];
     uint8_t note = in_msg[1];
     uint8_t vel = in_msg[2];
-    
+
     uint8_t type = status & 0xF0;
     uint8_t chan = status & 0x0F;
 
     if (type == 0x90 && vel > 0) { // Note On
+        inst->pad_held[note] = 1;
         int chord_idx = note - inst->base_note;
         if (chord_idx >= 0 && chord_idx < 48) {
             const preset_def_t *preset = &g_presets[inst->preset_idx];
             const chord_def_t *chord = &preset->chords[chord_idx];
-            
+
             int out_count = 0;
-            inst->active_counts[note] = 0;
-            
+            // Don't reset active_counts[note] — accumulate across overlapping presses
+            // so a release can emit note-offs for every audible voice.
+
             int N = chord->count;
             int order[12];
             for (int i = 0; i < N; i++) order[i] = i;
@@ -128,23 +164,22 @@ static int ic_process_midi(void *instance,
 
             int sample_rate = g_host ? g_host->sample_rate : 44100;
             int strum_samples = (inst->strum * sample_rate) / 1000;
-            int length_samples = (inst->length * sample_rate) / 1000;
 
             for (int i = 0; i < N; i++) {
                 int idx = order[i]; // Play order index
                 int out_note = chord->notes[idx] + inst->transpose;
-                
+
                 // Inversion
                 if (inst->invert > 0 && idx < inst->invert) {
                     out_note += 12;
                 } else if (inst->invert < 0 && idx >= N + inst->invert) {
                     out_note -= 12;
                 }
-                
+
                 // Tilt implies velocity ramp
                 int new_vel = vel;
                 if (inst->tilt != 0 && N > 1) {
-                    float pos = (2.0f * idx / (N - 1)) - 1.0f; // Use original position for tilt
+                    float pos = (2.0f * idx / (N - 1)) - 1.0f;
                     new_vel = vel + (int)(vel * (inst->tilt / 100.0f) * pos);
                     if (new_vel < 1) new_vel = 1;
                     if (new_vel > 127) new_vel = 127;
@@ -159,25 +194,64 @@ static int ic_process_midi(void *instance,
                             out_msgs[out_count][1] = out_note;
                             out_msgs[out_count][2] = new_vel;
                             out_lens[out_count] = 3;
-                            
-                            inst->active_notes[note][inst->active_counts[note]++] = out_note;
+                            // Voice fires immediately — track as audible
+                            active_append(inst, note, (uint8_t)out_note);
                             out_count++;
                         }
                     } else {
-                        queue_note(inst, status, out_note, new_vel, delay);
-                        inst->active_notes[note][inst->active_counts[note]++] = out_note;
+                        queue_note(inst, status, out_note, new_vel, note, delay);
+                        // Don't append to active_notes yet — tick adds on fire
                     }
-                    
-                    // Queue Note Off
-                    queue_note(inst, 0x80 | chan, out_note, 0, delay + length_samples);
+                    // No paired note-off queued here: pad release emits offs
+                    // for all currently-audible voices; for strum voices that
+                    // fire post-release, tick queues a note-off at length_samples
+                    // when the note-on actually fires (so length is only applied
+                    // to voices that would otherwise have no release signal).
                 }
             }
             return out_count;
         }
     }
     else if (type == 0x80 || (type == 0x90 && vel == 0)) { // Note Off
-        // Ignore incoming Note Offs, length is controlled by parameter
-        return 0;
+        // Pad release: mark unheld. Emit the first voice's note-off now
+        // for low-latency release; stagger the rest across ticks so a
+        // thick chord doesn't burst the downstream inject buffer in one
+        // frame (which can drop events and strand voices on Move's track).
+        // Voices that fail to queue (queue full) fall back to direct emit.
+        // Voices emitted directly are removed from active_notes so the
+        // tick-path doesn't double-release them; voices queued stay in
+        // active_notes until tick fires their note-off.
+        inst->pad_held[note] = 0;
+        int n_active = inst->active_counts[note];
+        if (n_active == 0) return 0;
+
+        uint8_t direct_emit[MAX_ACTIVE_PER_NOTE];
+        int n_direct = 0;
+
+        for (int i = 0; i < n_active; i++) {
+            uint8_t voice = inst->active_notes[note][i];
+            int ok = 0;
+            if (i > 0) {
+                ok = queue_note(inst, 0x80 | chan, voice, 0, note,
+                                i * RELEASE_STAGGER_SAMPLES);
+            }
+            if (!ok) {
+                if (n_direct < MAX_ACTIVE_PER_NOTE) {
+                    direct_emit[n_direct++] = voice;
+                }
+            }
+        }
+
+        int out_count = 0;
+        for (int i = 0; i < n_direct && out_count < max_out; i++) {
+            out_msgs[out_count][0] = 0x80 | chan;
+            out_msgs[out_count][1] = direct_emit[i];
+            out_msgs[out_count][2] = 0;
+            out_lens[out_count] = 3;
+            out_count++;
+            active_remove_one(inst, note, direct_emit[i]);
+        }
+        return out_count;
     }
 
     // Pass through for everything else
@@ -186,7 +260,7 @@ static int ic_process_midi(void *instance,
         out_lens[0] = in_len;
         return 1;
     }
-    
+
     return 0;
 }
 
@@ -200,12 +274,49 @@ static int ic_tick(void *instance, int frames, int sample_rate, uint8_t out_msgs
         pending_note_t *p = &inst->pending[i];
         p->delay_samples -= frames;
 
-        if (p->delay_samples <= 0 && count < max_out) {
-            out_msgs[count][0] = p->status;
-            out_msgs[count][1] = p->note;
-            out_msgs[count][2] = p->velocity;
-            out_lens[count] = 3;
-            count++;
+        if (p->delay_samples <= 0) {
+            uint8_t ptype = p->status & 0xF0;
+            int is_off = (ptype == 0x80) || (ptype == 0x90 && p->velocity == 0);
+
+            int emit = 0;
+            if (is_off) {
+                // Suppress length-timer note-off while pad is still held —
+                // pad release is what ends the voice. If pad is released,
+                // only emit if the voice is actually audible (i.e., its
+                // note-on already fired and the pad-release handler didn't
+                // already release it).
+                if (!inst->pad_held[p->input_note]) {
+                    emit = active_remove_one(inst, p->input_note, p->note);
+                }
+            } else {
+                // Strum note-on: always fire (even if pad already released —
+                // strum completes). Track as audible so release can emit off.
+                emit = 1;
+                active_append(inst, p->input_note, p->note);
+
+                // If pad is already released at the moment this strum voice
+                // fires, its only release signal is the length timer, so
+                // queue a paired note-off at length_samples. For voices that
+                // fire while pad is held, release-handler emits the note-off
+                // on pad release — no pending entry needed.
+                if (!inst->pad_held[p->input_note]) {
+                    int length_samples = (inst->length * sample_rate) / 1000;
+                    queue_note(inst, 0x80 | (p->status & 0x0F),
+                               p->note, 0, p->input_note, length_samples);
+                }
+            }
+
+            if (emit && count < max_out) {
+                out_msgs[count][0] = p->status;
+                out_msgs[count][1] = p->note;
+                out_msgs[count][2] = p->velocity;
+                out_lens[count] = 3;
+                count++;
+            } else if (emit) {
+                // out buffer full — leave in queue for next tick
+                i++;
+                continue;
+            }
 
             // Remove from queue
             for (int j = i; j < inst->pending_count - 1; j++) {
