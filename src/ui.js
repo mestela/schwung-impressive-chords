@@ -45,6 +45,7 @@ function loadChords() {
         if (content) {
             chordsData = JSON.parse(content);
             presets = Object.keys(chordsData);
+            presets.sort();
             if (presets.length > 0) {
                 currentPreset = presets[currentPresetIdx];
                 displayMessage("Impressive Chords", currentPreset, "Ready", "");
