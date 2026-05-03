@@ -32,6 +32,31 @@ You can install this module directly from this repository on your Move device:
 - **Fit Strum**: Fit the strum into the retrig length (0 or 1).
 - **Gate**: Kill notes on pad release (0 or 1).
 
+## Dynamic Chords Loading
+
+Starting with v0.1.22, Impressive Chords supports loading chord sets dynamically at runtime from various formats.
+
+### Supported Formats
+- **.json**: Standard JSON files containing chord mappings.
+- **.adv / .als**: Ableton Device Presets or Live Sets. The module will automatically extract the chords from the gzipped XML.
+- **.alc**: Ableton Clips. The module will extract unique chords from the MIDI notes in the clip by grouping notes that occur within 50ms of each other.
+
+### How to add custom chords:
+1. Connect to your Move device via SSH/SFTP.
+2. Place your files in the `sources` directory:
+   `/data/UserData/schwung/modules/midi_fx/impressive-chords/sources/`
+3. The module will scan this directory at startup, parse the files, and write them in a simplified format to the `presets` directory.
+4. It will also automatically update `module.json` with the new preset names so they appear in the stock UI parameter menu!
+
+### Custom File Format (.chords)
+The simplified format used internally and loaded by the C DSP engine is a simple line-based format:
+```
+Name: My Custom Chord Set
+0: 60,64,67
+1: 62,65,69
+```
+You can also write these files directly and place them in the `presets` directory!
+
 ## Source Code
 
 The source code is available in this repository for reference.
