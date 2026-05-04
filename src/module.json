@@ -2,7 +2,7 @@
   "id": "impressive-chords",
   "name": "Impressive Chords",
   "description": "Advanced chord generator with strumming and clock-synced retriggering",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "author": "mestela",
   "capabilities": {
     "chainable": true,
@@ -11,65 +11,16 @@
       "levels": {
         "root": {
           "name": "Impressive Chords",
+          "count_param": "preset_count",
+          "list_param": "preset_index",
+          "name_param": "preset_name",
           "params": [
             {
-              "key": "preset",
+              "key": "preset_index",
               "name": "Preset",
-              "type": "enum",
-              "options": [
-                "90s R&B",
-                "Alt R&B",
-                "Art Rock",
-                "Chill House",
-                "Chill R&B",
-                "Cinematic",
-                "Classic House",
-                "Classic R&B",
-                "Classic Soul",
-                "Cool Jazz",
-                "Detroit Techno",
-                "Emo Gospel",
-                "Emo House",
-                "Fusion R&B",
-                "Future Bounce",
-                "Future Soul",
-                "Gospel Soul",
-                "Guitar Voicings",
-                "Impressionist",
-                "Indie Jazz",
-                "Indie Pop",
-                "Indie R&B",
-                "Jazz Pop",
-                "Jazz Soul",
-                "Late Soul",
-                "Liquid Soul",
-                "Lofi Gospel",
-                "Lofi R&B 1",
-                "Lofi R&B 2",
-                "Lush Pads",
-                "Modern Pop",
-                "Modern Soul",
-                "Neo Ballads",
-                "Neo Classical",
-                "Neo Gospel",
-                "Neo Soul Major",
-                "Neo Soul Minor",
-                "Pop Ballad",
-                "Pop Piano",
-                "Pop Rock Ballad",
-                "Post Rock",
-                "Sad Ballads",
-                "Sad Gospel",
-                "Smooth Jazz",
-                "Soul Ballads",
-                "Soul Hop",
-                "Soul R&B",
-                "Timeless",
-                "Trap R&B",
-                "Warm House",
-                "Warm Pop",
-                "Warm Rock"
-              ],
+              "type": "int",
+              "min": 0,
+              "max": 500,
               "default": 0
             },
             {
@@ -194,10 +145,18 @@
               "min": 0,
               "max": 1,
               "default": 0
+            },
+            {
+              "key": "scan",
+              "name": "Scan Presets",
+              "type": "int",
+              "min": 0,
+              "max": 1,
+              "default": 0
             }
           ],
           "knobs": [
-            "preset",
+            "preset_index",
             "base_note",
             "transpose",
             "invert",
@@ -210,7 +169,8 @@
             "choke",
             "notes",
             "fit",
-            "gate"
+            "gate",
+            "scan"
           ]
         }
       }
