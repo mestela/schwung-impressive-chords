@@ -17,7 +17,7 @@ You can install this module directly from this repository on your Move device:
 
 ## Parameters
 
-- **Preset**: Select from 52 different chord presets (Indie Jazz, Guitar Voicings, etc.).
+- **Preset**: Select from your available chord presets using the fullscreen browser.
 - **Base Note**: The MIDI note that triggers the chord.
 - **Transpose**: Transpose the output notes.
 - **Invert**: Shift notes up or down by octave (-12 to +12).
@@ -45,8 +45,9 @@ Starting with v0.1.22, Impressive Chords supports loading chord sets dynamically
 1. Connect to your Move device via SSH/SFTP.
 2. Place your files in the `sources` directory:
    `/data/UserData/schwung/modules/midi_fx/impressive-chords/sources/`
-3. The module will scan this directory at startup, parse the files, and write them in a simplified format to the `presets` directory.
-4. It will also automatically update `module.json` with the new preset names so they appear in the stock UI parameter menu!
+3. Turn the **`Scan Presets`** knob to **`1`** on the device to trigger the scan!
+4. The module will parse the files and update the preset list dynamically.
+5. Because it uses the dedicated Preset Browser UI, there is no limit on the number of presets you can have!
 
 ### Custom File Format (.chords)
 The simplified format used internally and loaded by the C DSP engine is a simple line-based format:
