@@ -2,7 +2,7 @@
 
 This is a MIDI FX module for Schwung that generates impressive chords with strumming, tilt, and articulation controls. It's a recreation of Expressive Chords, a M4L device for Ableton Live (not a port).
 
-Demo: https://www.youtube.com/watch?v=70dxx5Que84
+Demo: https://www.youtube.com/watch?v=seM7PpPqsQk
 
 ## Inspiration and Process
 This module was inspired by the "Expressive Chords" concept. The chord presets were extracted from the source data and recreated in this native C implementation to provide dynamic chord generation, strumming, tilting, and articulation.
