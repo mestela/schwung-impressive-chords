@@ -25,6 +25,7 @@
             },
             {
               "key": "base_note",
+              "short_name": "Note",
               "name": "Base Note",
               "type": "int",
               "min": 0,
@@ -124,6 +125,7 @@
             },
             {
               "key": "notes",
+              "short_name": "Limit",
               "name": "Notes Limit",
               "type": "int",
               "min": 0,
@@ -132,6 +134,7 @@
             },
             {
               "key": "fit",
+              "short_name": "Strum",
               "name": "Fit Strum",
               "type": "int",
               "min": 0,
@@ -148,6 +151,7 @@
             },
             {
               "key": "scan",
+              "short_name": "Presets",
               "name": "Scan Presets",
               "type": "int",
               "min": 0,
