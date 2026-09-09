@@ -60,6 +60,20 @@ Name: My Custom Chord Set
 ```
 You can also write these files directly and place them in the `presets` directory!
 
+## Roland J-6 Chord Pack
+
+The bundled presets include all 100 factory chord sets from the Roland J-6,
+transcribed from Roland's official [Chord Set List](https://static.roland.com/manuals/J-6_manual_v102/eng/28645807.html).
+Each `J-6` preset maps the instrument's 12 key buttons to trigger notes 0-11 in
+Impressive Chords. The published voicings are preserved and ordered low-to-high
+for predictable strumming.
+
+To regenerate the pack from Roland's current page:
+
+```bash
+python3 scripts/import_roland_j6.py
+```
+
 ## Source Code
 
 The source code is available in this repository for reference.
